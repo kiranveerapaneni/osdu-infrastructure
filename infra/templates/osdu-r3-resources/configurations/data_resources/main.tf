@@ -191,6 +191,10 @@ variable "sb_topics" {
   ]
 }
 
+variable "principal_objectId" {
+  description = "Existing Service Principal ObjectId."
+  type        = string
+}
 
 #-------------------------------
 # Private Variables  (common.tf)
@@ -213,12 +217,44 @@ locals {
   storage_name        = "${replace(local.base_name_21, "-", "")}sa"
   cosmosdb_name       = "${local.base_name}-db"
   sb_namespace        = "${local.base_name_21}-bus"
+  eventgrid_name            = "${local.base_name_21}-grid"
+  eventgrid_domain_name     = format("%s-eventgrid", "test")
+  eventgrid_records_topic          = format("%s-recordstopic", local.eventgrid_name)
+
+  eventgrid_domain_key_name        = format("%s-key", local.eventgrid_domain_name)
+  eventgrid_records_topic_name     = format("%s-recordstopic", local.eventgrid_domain_name)
+  eventgrid_records_topic_endpoint = format("https://%s.%s-1.eventgrid.azure.net/api/events", local.eventgrid_records_topic, var.resource_group_location)
+
+  eventgrid_domian_key_name = format("%s-key", local.eventgrid_domain_name)
+  keyvaultname = format("%s-keyvault", "test")
+
+  role = "Contributor"
+  rbac_principals = [
+    data.terraform_remote_state.central_resources.outputs.osdu_identity_principal_id,
+    data.terraform_remote_state.central_resources.outputs.principal_objectId
+  ]
 }
 
 
 #-------------------------------
 # Common Resources  (common.tf)
 #-------------------------------
+data "azurerm_client_config" "current" {}
+data "azurerm_subscription" "current" {}
+
+data "terraform_remote_state" "central_resources" {
+  backend = "azurerm"
+
+  config = {
+    storage_account_name = var.remote_state_account
+    container_name       = var.remote_state_container
+    key                  = format("terraform.tfstateenv:%s", var.central_resources_workspace_name)
+  }
+}
+
+
+
+
 resource "random_string" "workspace_scope" {
   keepers = {
     # Generate a new id each time we switch to a new workspace or app id
@@ -231,6 +267,20 @@ resource "random_string" "workspace_scope" {
   upper   = false
 }
 
+variable "remote_state_account" {
+  description = "Remote Terraform State Azure storage account name. This is typically set as an environment variable and used for the initial terraform init."
+  type        = string
+}
+
+variable "remote_state_container" {
+  description = "Remote Terraform State Azure storage container name. This is typically set as an environment variable and used for the initial terraform init."
+  type        = string
+}
+
+variable "central_resources_workspace_name" {
+  description = "(Required) The workspace name for the central_resources repository terraform environment / template to reference for this template."
+  type        = string
+}
 
 #-------------------------------
 # Resource Group
@@ -304,6 +354,53 @@ module "service_bus" {
   topics = var.sb_topics
 }
 
+#-------------------------------
+# Azure Event Grid (main.tf)
+#-------------------------------
+
+module "event_grid" {
+  source = "../../../../modules/providers/azure/event-grid"
+
+  name                = local.eventgrid_name
+  resource_group_name = azurerm_resource_group.main.name
+  topics = [
+    {
+      name = format("%s-recordstopic", "opendes")
+    }
+  ]
+}
+
+// Add the Event Grid Name to the Vault
+resource "azurerm_key_vault_secret" "eventgrid_name" {
+  #source = "../../../../modules/providers/azure/keyvault"
+  name         = local.eventgrid_domain_name
+  value        = module.event_grid.name
+  key_vault_id = module.keyvault.keyvault_id
+}
+
+
+// Add the Event Grid Key to the Vault
+resource "azurerm_key_vault_secret" "eventgrid_key" {
+  name         = local.eventgrid_domain_key_name
+  value        = module.event_grid.primary_access_key
+  key_vault_id =  module.keyvault.keyvault_id
+}
+
+// Add the Record Topic Name to the Vault
+resource "azurerm_key_vault_secret" "recordstopic_name" {
+  name         = local.eventgrid_records_topic_name
+  value        = local.eventgrid_records_topic_endpoint
+  key_vault_id =  module.keyvault.keyvault_id
+}
+
+#-------------------------------
+# KeyVault (main.tf)
+#-------------------------------
+module "keyvault" {
+  source = "../../../../modules/providers/azure/keyvault"
+  name = local.keyvaultname
+  resource_group_name = azurerm_resource_group.main.name
+}
 
 #-------------------------------
 # Output Variables  (output.tf)
