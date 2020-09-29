@@ -230,8 +230,8 @@ locals {
 
   role = "Contributor"
   rbac_principals = [
-    data.terraform_remote_state.central_resources.outputs.osdu_identity_principal_id,
-    data.terraform_remote_state.central_resources.outputs.principal_objectId
+    "",#data.terraform_remote_state.central_resources.outputs.osdu_identity_principal_id,
+    ""#data.terraform_remote_state.central_resources.outputs.principal_objectId
   ]
 }
 
@@ -245,15 +245,13 @@ data "azurerm_subscription" "current" {}
 data "terraform_remote_state" "central_resources" {
   backend = "azurerm"
 
-  config = {
+config = {
     storage_account_name = var.remote_state_account
     container_name       = var.remote_state_container
     key                  = format("terraform.tfstateenv:%s", var.central_resources_workspace_name)
   }
+
 }
-
-
-
 
 resource "random_string" "workspace_scope" {
   keepers = {
@@ -398,7 +396,7 @@ resource "azurerm_key_vault_secret" "recordstopic_name" {
 #-------------------------------
 module "keyvault" {
   source = "../../../../modules/providers/azure/keyvault"
-  name = local.keyvaultname
+  #name = local.keyvaultname
   resource_group_name = azurerm_resource_group.main.name
 }
 
