@@ -228,11 +228,6 @@ locals {
   eventgrid_domian_key_name = format("%s-key", local.eventgrid_domain_name)
   keyvaultname = format("%s-keyvault", "test")
 
-  role = "Contributor"
-  rbac_principals = [
-    "",#data.terraform_remote_state.central_resources.outputs.osdu_identity_principal_id,
-    ""#data.terraform_remote_state.central_resources.outputs.principal_objectId
-  ]
 }
 
 
