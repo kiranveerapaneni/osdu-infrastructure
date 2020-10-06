@@ -255,6 +255,9 @@ module "keyvault" {
     elastic-username    = var.elasticsearch_username
     elastic-password    = var.elasticsearch_password
     postgres-password   = local.postgres_password
+    eventgrid-topicname = data.terraform_remote_state.data_resources.outputs.recordstopic_name
+    eventgrid-name      = data.terraform_remote_state.data_resources.outputs.eventgrid_name
+    eventgrid-key       = data.terraform_remote_state.data_resources.outputs.eventgrid_key
   }
 }
 
@@ -661,9 +664,9 @@ resource "azurerm_role_assignment" "service_bus_roles" {
 
 resource "azurerm_role_assignment" "event_grid_roles" {
   count                = length(local.rbac_principals)
-  role_definition_name = "Azure Service Bus Data Sender"
+  role_definition_name = "Azure Event Grid Data Sender"
   principal_id         = local.rbac_principals[count.index]
-  scope                = data.terraform_remote_state.data_resources.outputs.eventgrid_id
+  scope                = data.terraform_remote_state.data_resources.outputs.eventgrid_name
 }
 
 // Managed Identity Operator role for AKS to the OSDU Identity

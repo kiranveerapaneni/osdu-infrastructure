@@ -190,11 +190,6 @@ variable "sb_topics" {
   ]
 }
 
-variable "principal_objectId" {
-  description = "Existing Service Principal ObjectId."
-  type        = string
-}
-
 #-------------------------------
 # Private Variables  (common.tf)
 #-------------------------------
@@ -233,20 +228,6 @@ locals {
 #-------------------------------
 # Common Resources  (common.tf)
 #-------------------------------
-data "azurerm_client_config" "current" {}
-data "azurerm_subscription" "current" {}
-
-data "terraform_remote_state" "central_resources" {
-  backend = "azurerm"
-
-config = {
-    storage_account_name = var.remote_state_account
-    container_name       = var.remote_state_container
-    key                  = format("terraform.tfstateenv:%s", var.central_resources_workspace_name)
-  }
-
-}
-
 resource "random_string" "workspace_scope" {
   keepers = {
     # Generate a new id each time we switch to a new workspace or app id
@@ -259,20 +240,6 @@ resource "random_string" "workspace_scope" {
   upper   = false
 }
 
-variable "remote_state_account" {
-  description = "Remote Terraform State Azure storage account name. This is typically set as an environment variable and used for the initial terraform init."
-  type        = string
-}
-
-variable "remote_state_container" {
-  description = "Remote Terraform State Azure storage container name. This is typically set as an environment variable and used for the initial terraform init."
-  type        = string
-}
-
-variable "central_resources_workspace_name" {
-  description = "(Required) The workspace name for the central_resources repository terraform environment / template to reference for this template."
-  type        = string
-}
 
 #-------------------------------
 # Resource Group
@@ -361,13 +328,13 @@ module "event_grid" {
     }
   ]
 }
+/*
 
 // Add the Event Grid Name to the Vault
 resource "azurerm_key_vault_secret" "eventgrid_name" {
-  #source = "../../../../modules/providers/azure/keyvault"
   name         = local.eventgrid_domain_name
   value        = module.event_grid.name
-  key_vault_id = module.keyvault.keyvault_id
+  #key_vault_id = data.terraform_remote_state..outputs.keyvault_id
 }
 
 
@@ -385,18 +352,43 @@ resource "azurerm_key_vault_secret" "recordstopic_name" {
   key_vault_id =  module.keyvault.keyvault_id
 }
 
-#-------------------------------
+*/
+
+
+/*#-------------------------------
 # KeyVault (main.tf)
 #-------------------------------
 module "keyvault" {
   source = "../../../../modules/providers/azure/keyvault"
   #name = local.keyvaultname
   resource_group_name = azurerm_resource_group.main.name
-}
+}*/
 
 #-------------------------------
 # Output Variables  (output.tf)
 #-------------------------------
+
+output "recordstopic_name" {
+  description = "Event grid records changed topic name"
+  value       = format("%s-recordstopic", "opendes")
+}
+
+output "eventgrid_key" {
+  description = "Event grid primary key"
+  value = module.event_grid.primary_access_key
+}
+
+output "eventgrid_name" {
+  description = "Event grid primary key"
+  value =  module.event_grid.name
+}
+
+output "eventgrid_id" {
+  description = "Event grid primary key"
+  value = module.event_grid.name
+}
+
+
 output "data_resource_group_name" {
   description = "The name of the resource group containing the data specific resources"
   value       = azurerm_resource_group.main.name

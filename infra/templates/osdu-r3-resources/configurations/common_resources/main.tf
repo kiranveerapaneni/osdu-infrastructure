@@ -45,6 +45,10 @@ provider "random" {
   version = "~>2.2"
 }
 
+variable "remote_state_account" {
+  description = "Remote Terraform State Azure storage account name. This is typically set as an environment variable and used for the initial terraform init."
+  type        = string
+}
 
 #-------------------------------
 # Application Variables  (variables.tf)
@@ -183,6 +187,7 @@ module "keyvault" {
     app-dev-sp-tenant-id = data.azurerm_client_config.current.tenant_id
   }
 }
+
 
 #-------------------------------
 # Output Variables  (output.tf)
