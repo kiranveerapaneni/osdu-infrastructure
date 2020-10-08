@@ -328,41 +328,6 @@ module "event_grid" {
     }
   ]
 }
-/*
-
-// Add the Event Grid Name to the Vault
-resource "azurerm_key_vault_secret" "eventgrid_name" {
-  name         = local.eventgrid_domain_name
-  value        = module.event_grid.name
-  #key_vault_id = data.terraform_remote_state..outputs.keyvault_id
-}
-
-
-// Add the Event Grid Key to the Vault
-resource "azurerm_key_vault_secret" "eventgrid_key" {
-  name         = local.eventgrid_domain_key_name
-  value        = module.event_grid.primary_access_key
-  key_vault_id =  module.keyvault.keyvault_id
-}
-
-// Add the Record Topic Name to the Vault
-resource "azurerm_key_vault_secret" "recordstopic_name" {
-  name         = local.eventgrid_records_topic_name
-  value        = local.eventgrid_records_topic_endpoint
-  key_vault_id =  module.keyvault.keyvault_id
-}
-
-*/
-
-
-/*#-------------------------------
-# KeyVault (main.tf)
-#-------------------------------
-module "keyvault" {
-  source = "../../../../modules/providers/azure/keyvault"
-  #name = local.keyvaultname
-  resource_group_name = azurerm_resource_group.main.name
-}*/
 
 #-------------------------------
 # Output Variables  (output.tf)
@@ -385,7 +350,7 @@ output "eventgrid_name" {
 
 output "eventgrid_id" {
   description = "Event grid primary key"
-  value = module.event_grid.name
+  value = module.event_grid.id
 }
 
 

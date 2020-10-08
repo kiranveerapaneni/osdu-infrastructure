@@ -99,7 +99,7 @@ locals {
     [module.storage_account.id, data.terraform_remote_state.data_resources.outputs.storage_account_id],
 
     # The Container Registry Id
-    [data.terraform_remote_state.common_resources.outputs.container_registry_id],
+    [data.terraform_remote_state.common_resources.outputs.container_registry_id]
   )
 
   // network.tf
@@ -662,12 +662,19 @@ resource "azurerm_role_assignment" "service_bus_roles" {
   scope                = data.terraform_remote_state.data_resources.outputs.sb_namespace_id
 }
 
-resource "azurerm_role_assignment" "event_grid_roles" {
+resource "azurerm_role_assignment" "event_grid_roles2" {
   count                = length(local.rbac_principals)
-  role_definition_name = "Azure Event Grid Data Sender"
+  role_definition_name = "Owner"
   principal_id         = local.rbac_principals[count.index]
-  scope                = data.terraform_remote_state.data_resources.outputs.eventgrid_name
+  scope                = data.terraform_remote_state.data_resources.outputs.eventgrid_id
 }
+
+/*resource "azurerm_role_assignment" "event_grid_roles3" {
+  count                = length(local.rbac_principals)
+  role_definition_name = "Contributor"
+  principal_id         = local.rbac_principals[count.index]
+  scope                = data.terraform_remote_state.data_resources.outputs.eventgrid_id
+}*/
 
 // Managed Identity Operator role for AKS to the OSDU Identity
 resource "azurerm_role_assignment" "osdu_identity_mi_operator" {
